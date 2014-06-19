@@ -1,0 +1,143 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+    <link rel="stylesheet" type="text/css" href="http://bootswatch.com/lumen/bootstrap.min.css">
+    <style>
+      #messages, #calls { list-style-type: none; margin: 0; padding: 0; }
+      #messages, #calls li { padding: 5px 10px; }
+      #messages, #calls li:nth-child(odd) { background: #eee; }
+      body { padding-top: 0px; }
+      .frontend { height: 150px;
+      	background-color:#666; padding-top:30px; padding-bottom:40px; margin-bottom:80px; border-bottom:2px dashed #333;
+      }
+    </style>
+	<script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+  </head>
+  <body>
+    
+  <div class="frontend">
+	  <div class="container">
+	    	<div class="row">
+	    		<div class="col-xs-4">
+
+	    			<form class="form-inline" id="returncall">
+				    	<h4 style="color:white">Заказ обратного звонка</h4>
+						  <div class="input-group">
+						    <input id="phone" name="phone" type="text" class="form-control">
+						    <span class="input-group-btn">
+						      <input type="submit" class="btn btn-warning" type="button" value="перезвоните мне" />
+						    </span>
+						  </div>
+	    			</form>
+
+	    		</div>
+			  </div>
+		  </div>
+	  </div>
+  </div>
+
+
+
+    <div class="container">
+    	<div class="row">
+    		<div class="col-xs-8">
+
+					<div class="panel panel-primary">
+						<div class="panel-heading">Последние запросы обратных звонков</div>
+						<div class="panel-body">
+							<div id="calls"></div>
+
+						</div>
+						<div class="panel-footer">
+
+						</div>
+					</div>   
+
+    		</div>
+    		<div class="col-xs-4">
+
+					<div class="panel panel-primary">
+						<div class="panel-heading">Чат</div>
+						<div class="panel-body">
+							<ul id="messages"></ul>
+						</div>
+						<div class="panel-footer">
+							<form action="" id="chat" class="form-inline">
+
+							  <div class="input-group">
+							    <input id="m" autocomplete="off" type="text" class="form-control">
+							    <span class="input-group-btn">
+							      <input type="submit" class="btn btn-primary" type="button" value="отправить" />
+							    </span>
+							  </div>
+
+					    </form> 			
+						</div>
+					</div>   
+
+    		</div>
+    	</div>
+    </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+	<script src="/socket.io/socket.io.js"></script>
+	<script>
+
+	  $('#returncall').submit(function(){
+
+	  	var data = {
+	  		phone: $('#phone').val()
+	  	};
+
+	    $.post('/addReturnCall', data, function(res) {
+	    	console.log(res);
+		    $('#returncall').html('<h4 style="color:white">Спасибо!<br/> Вам перезвонят в течении 10 минут.</h4>');
+	    });
+
+	    return false;
+	  });	  
+
+
+	  var socket = io();
+
+	  $('#chat').submit(function(){
+	    socket.emit('chat message', $('#m').val());
+	    $('#m').val('');
+	    return false;
+	  });	  
+
+	  socket.on('chat message', function(msg){
+	    $('#messages').prepend($('<li>').text(msg));
+	  });	  
+
+	  socket.on('history', function(history){
+	    $.each(history, function(i,val) {
+		    $('#messages').prepend($('<li>').text(val.time + " - " + val.message));
+	    })
+	  });	  
+
+	  socket.on('calls list', function(list){
+	  	$('#calls').html('');
+	  	console.log('list updated');
+	    $.each(list, function(i,val) {
+		    $('#calls').prepend($('<li>').text(val.time + " - " + val.phone));
+	    })
+	  });		  	
+
+	
+	</script>
+
+  </body>
+</html>
