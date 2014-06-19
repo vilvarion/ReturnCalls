@@ -1,52 +1,68 @@
 <!doctype html>
-<html>
-  <head>
-    <title>Socket.IO chat</title>
-    <link rel="stylesheet" type="text/css" href="http://bootswatch.com/lumen/bootstrap.min.css">
-    <style>
-      #messages, #calls { list-style-type: none; margin: 0; padding: 0; }
-      #messages, #calls li { padding: 5px 10px; }
-      #messages, #calls li:nth-child(odd) { background: #eee; }
-      body { padding-top: 0px; }
-      .frontend { height: 150px;
-      	background-color:#666; padding-top:30px; padding-bottom:40px; margin-bottom:80px; border-bottom:2px dashed #333;
-      }
-    </style>
-	<script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
-  </head>
-  <body>
-    
-  <div class="frontend">
-	  <div class="container">
-	    	<div class="row">
-	    		<div class="col-xs-4">
+<html lang="ru" ng-app="ReturnCalls">
+	<head>
+		<title>ReturnCalls</title>
+		<link rel="stylesheet" type="text/css" href="http://bootswatch.com/lumen/bootstrap.min.css">
+		<style>
+			h4 { color: white; }
+			thead { color: #999; }
+			#messages, #calls { list-style-type: none; margin: 0; padding: 0; }
+			#messages { max-height: 400px; overflow: auto; }
+			#messages li, #calls li { padding: 5px 10px; }
+			#messages li.old { color: #999; }
+			#messages li:nth-child(odd), #calls li:nth-child(odd) { background: #f2f2f2; }
+			body { padding-top: 0px; }
+			.frontend { height: 150px; background-color: #666; padding-top:30px; padding-bottom:40px; margin-bottom:40px; border-bottom:2px dashed #333; }
+			.close_div { position:absolute; top:10px; right:25px; font-size:28px; color:#ccc; cursor:pointer; }
+			.operatior-interface { margin-top:40px; }
+		</style>
+		<script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.18/angular.min.js"></script>
 
-	    			<form class="form-inline" id="returncall">
-				    	<h4 style="color:white">Заказ обратного звонка</h4>
-						  <div class="input-group">
-						    <input id="phone" name="phone" type="text" class="form-control">
-						    <span class="input-group-btn">
-						      <input type="submit" class="btn btn-warning" type="button" value="перезвоните мне" />
-						    </span>
-						  </div>
-	    			</form>
+	</head>
+	<body>
+	
+	<div class="frontend">
+		<div class="container">
+			<div class="row">
+				<div class="col-xs-4">
 
-	    		</div>
-			  </div>
-		  </div>
-	  </div>
-  </div>
+					<form class="form-inline" id="returncall">
+						<h4>Заказ обратного звонка</h4>
+							<div class="input-group">
+							<input id="phone" name="phone" type="text" class="form-control">
+							<span class="input-group-btn">
+								<input type="submit" class="btn btn-warning" type="button" value="перезвоните мне" />
+							</span>
+							</div>
+					</form>
+
+				</div>
+			</div>
+			<div class="close_div" onclick="$('.frontend').hide()">x</div>
+		</div>
+	</div>
 
 
 
-    <div class="container">
-    	<div class="row">
-    		<div class="col-xs-8">
+	<div class="container operatior-interface">
+		<div class="row">
+			<div class="col-xs-8">
 
 					<div class="panel panel-primary">
 						<div class="panel-heading">Последние запросы обратных звонков</div>
-						<div class="panel-body">
-							<div id="calls"></div>
+						<div class="panel-body" ng-controller="callsList">
+
+							<table class="table table-striped">
+								<thead>
+									<tr><td>Дата</td><td>Телефон</td><td>Комментарий</td><td>Выполнение</td></tr>
+								</thead>
+								<tbody>
+									<tr ng-repeat="item in list">
+										<td>{{item.time}}</td><td>{{item.phone}}</td><td>{{item.comment}}</td><td></td>
+									</tr>
+								</tbody>
+							</table>
 
 						</div>
 						<div class="panel-footer">
@@ -54,90 +70,171 @@
 						</div>
 					</div>   
 
-    		</div>
-    		<div class="col-xs-4">
+			</div>
+			<div class="col-xs-4">
 
 					<div class="panel panel-primary">
-						<div class="panel-heading">Чат</div>
+						<div class="panel-heading">Операторский чат</div>
 						<div class="panel-body">
 							<ul id="messages"></ul>
 						</div>
 						<div class="panel-footer">
 							<form action="" id="chat" class="form-inline">
 
-							  <div class="input-group">
-							    <input id="m" autocomplete="off" type="text" class="form-control">
-							    <span class="input-group-btn">
-							      <input type="submit" class="btn btn-primary" type="button" value="отправить" />
-							    </span>
-							  </div>
+								<div class="input-group">
+								<input id="m" autocomplete="off" type="text" class="form-control">
+								<span class="input-group-btn">
+									<input type="submit" class="btn btn-primary" type="button" value="отправить" />
+								</span>
+								</div>
 
-					    </form> 			
+						</form> 			
 						</div>
-					</div>   
+					</div>
 
-    		</div>
-    	</div>
-    </div>
-
-
-
-
-
-
-
-
-
-
+			</div>
+		</div>
+	</div>
 
 
 
 	<script src="/socket.io/socket.io.js"></script>
 	<script>
-
-	  $('#returncall').submit(function(){
-
-	  	var data = {
-	  		phone: $('#phone').val()
-	  	};
-
-	    $.post('/addReturnCall', data, function(res) {
-	    	console.log(res);
-		    $('#returncall').html('<h4 style="color:white">Спасибо!<br/> Вам перезвонят в течении 10 минут.</h4>');
-	    });
-
-	    return false;
-	  });	  
+		var app = angular.module('ReturnCalls', []);
 
 
-	  var socket = io();
+		// Фабрика взята отсюда:
+		// http://briantford.com/blog/angular-socket-io
+		app.factory('socket',function ($rootScope){
+		    var socket = io.connect();
+		    return {
+		        on: function (eventName,callback){
+		            socket.on(eventName,function(){
+		                var args = [].slice.call(arguments);
+		                $rootScope.$apply(function(){
+		                    if(callback){
+		                        callback.apply(socket,args);
+		                    }
+		                });
+		            });
+		        },
+		        emit: function (eventName, data, callback){
+		            var args = [].slice.call(arguments), cb;
+		            if( typeof args[args.length-1]  == "function" ){
+		                cb = args[args.length-1];
+		                args[args.length-1] = function(){
+		                    var args = [].slice.call(arguments);
+		                    $rootScope.$apply(function(){
+		                        if(cb){
+		                            cb.apply(socket,args);
+		                        }
+		                    });
+		                };
+		            }
+		            socket.emit.apply(socket, args);
+		        }
+		    };
+		});
 
-	  $('#chat').submit(function(){
-	    socket.emit('chat message', $('#m').val());
-	    $('#m').val('');
-	    return false;
-	  });	  
+		// Работаем с контроллером нашего списка телефонов
+		app.controller('callsList', function ($scope, socket) {
+			
+			// $scope.list = [ { phone: 'Нет данных' }, { phone: '123' } ];
 
-	  socket.on('chat message', function(msg){
-	    $('#messages').prepend($('<li>').text(msg));
-	  });	  
+			socket.on('calls list', function(list){
 
-	  socket.on('history', function(history){
-	    $.each(history, function(i,val) {
-		    $('#messages').prepend($('<li>').text(val.time + " - " + val.message));
-	    })
-	  });	  
 
-	  socket.on('calls list', function(list){
-	  	$('#calls').html('');
-	  	console.log('list updated');
-	    $.each(list, function(i,val) {
-		    $('#calls').prepend($('<li>').text(val.time + " - " + val.phone));
-	    })
-	  });		  	
+				console.log(list);
 
-	
+				$scope.list = list;
+
+			});		
+
+		});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		// Обработка запроса обратного звонка
+		$('#returncall').submit(function(){
+
+			var data = {
+				phone: $('#phone').val()
+			};
+
+			// Отправка введенного телефона методом POST
+			$.post('/addReturnCall', data, function(res) {
+				console.log(res);
+				$('#returncall').html('<h4 style="color:white">Спасибо!<br/> Вам перезвонят в течении 10 минут.</h4>');
+			});
+			
+			return false;
+		});	  
+
+
+/*
+
+
+
+		// Инициализируем сокет
+		var socket = io();
+
+		$('#chat').submit(function(){
+			socket.emit('chat message', $('#m').val());
+			$('#m').val('');
+			return false;
+		});	  
+
+		// Событие нового сообщения чата
+		var chatbox = $('#messages');
+
+		socket.on('chat message', function(msg){
+			$('#messages').append($('<li>').text(msg));
+			chatbox[0].scrollTop = chatbox[0].scrollHeight;
+		});	  
+
+		// Событие подгрузки истории чата
+		// (автоматически при установки связи в сокете)
+		socket.on('history', function(history){
+			$.each(history, function(i, val) {
+				$('#messages').append($('<li class="old">').text(val.time + " - " + val.message));
+			});
+			chatbox[0].scrollTop = chatbox[0].scrollHeight;
+		});	
+
+		// Обработка списка телефонов
+		socket.on('calls list', function(list){
+			$('#calls').html('');
+			console.log(list);
+			$.each(list, function(i, val) {
+				$('#calls').append($('<li>').text(val.time + " - " + val.phone));
+			})
+		});
+		  */
+
+
+		// Angular
+
+
+
 	</script>
 
-  </body>
+	</body>
 </html>

@@ -16,10 +16,10 @@ var ReturnCalls = mongoose.model('calls', {
 	});
 
 db.on('error', function (err) {
-    console.log('connection error:', err.message);
+	console.log('connection error:', err.message);
 });
 db.once('open', function callback () {
-    console.log("Connected to DB!");
+	console.log("Connected to DB!");
 });
 
 
@@ -28,10 +28,12 @@ function getTime () {
 }
 function fetchCalls (target) {
 	// Fetching returncalls history
-	ReturnCalls.find({}, function (err, calls) {
-		var callsMap = {};
+	ReturnCalls.find({})
+	.limit(20).sort({'_id': -1})
+	.exec(function (err, calls) {
+		var callsMap = [];
 		calls.forEach(function(call) {
-	    callsMap[call._id] = call;
+			callsMap.push(call);
 		});	
 		target.emit('calls list', callsMap);  
 	});
@@ -40,7 +42,7 @@ function fetchCalls (target) {
 // Routes
 
 app.get('/', function(req, res){
-  res.sendfile('index.html');
+	res.sendfile('index.html');
 });
 
 app.post('/addReturnCall', function(req, res){
@@ -64,27 +66,25 @@ app.post('/addReturnCall', function(req, res){
 
 io.on('connection', function(socket){
 
-
 	fetchCalls(socket);
 
 	// Fetching chat history
 	Chat.find({}, function (err, calls) {
 		var chatMap = {};
 		calls.forEach(function(chat) {
-	    chatMap[chat._id] = chat;
+			chatMap[chat._id] = chat;
 		});
 		socket.emit('history', chatMap);  
 	});
 
 
+	console.log('a user connected');
 
-  console.log('a user connected');
+	socket.on('chat message', function(msg){
 
-  socket.on('chat message', function(msg){
+		console.log('message: ' + msg);
 
-    console.log('message: ' + msg);
-
-    if(msg.length>0) {
+		if(msg.length>0) {
 
 			var chat = new Chat({ message: msg, time: getTime() });
 
@@ -95,17 +95,16 @@ io.on('connection', function(socket){
 					console.log('chat saving success..');
 				}
 			});    	
-    }
+		}
 
 		io.sockets.emit('chat message', getTime() + " - " + msg);
-		// socket.broadcast.emit('chat message', msg);
 
-  });
+	});
 
 
-  socket.on('disconnect', function(){
-    console.log('user disconnected');
-  });  
+	socket.on('disconnect', function(){
+		console.log('user disconnected');
+	});  
 
 });
 
@@ -113,5 +112,5 @@ io.on('connection', function(socket){
 // Http
 
 http.listen(3000, function(){
-  console.log('listening on *:3000');
+	console.log('listening on *:3000');
 });
