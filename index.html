@@ -6,11 +6,11 @@
 		<style>
 			h4 { color: white; }
 			thead { color: #999; }
-			#messages, #calls { list-style-type: none; margin: 0; padding: 0; }
-			#messages { max-height: 400px; overflow: auto; }
-			#messages li, #calls li { padding: 5px 10px; }
-			#messages li.old { color: #999; }
-			#messages li:nth-child(odd), #calls li:nth-child(odd) { background: #f2f2f2; }
+			.chatBox { list-style-type: none; margin: 0; padding: 0; }
+			.chatBox { max-height: 400px; overflow: auto; }
+			.chatBox li { padding: 5px 10px; }
+			.chatBox li.old { color: #999; }
+			.chatBox li:nth-child(odd), #calls li:nth-child(odd) { background: #f2f2f2; }
 			body { padding-top: 0px; }
 			.frontend { height: 150px; background-color: #666; padding-top:30px; padding-bottom:40px; margin-bottom:40px; border-bottom:2px dashed #333; }
 			.close_div { position:absolute; top:10px; right:25px; font-size:28px; color:#ccc; cursor:pointer; }
@@ -73,16 +73,18 @@
 			</div>
 			<div class="col-xs-4">
 
-					<div class="panel panel-primary">
+					<div class="panel panel-primary" ng-controller="chatBox">
 						<div class="panel-heading">Операторский чат</div>
 						<div class="panel-body">
-							<ul id="messages"></ul>
+							<ul class="chatBox">
+								<li ng-repeat="item in messages" on-last-repeat>{{item.message}}</li>
+							</ul>
 						</div>
 						<div class="panel-footer">
-							<form action="" id="chat" class="form-inline">
+							<form action="" id="chat" ng-submit="addMessage()" class="form-inline">
 
 								<div class="input-group">
-								<input id="m" autocomplete="off" type="text" class="form-control">
+								<input id="message" autocomplete="off" type="text" class="form-control">
 								<span class="input-group-btn">
 									<input type="submit" class="btn btn-primary" type="button" value="отправить" />
 								</span>
@@ -100,46 +102,49 @@
 
 	<script src="/socket.io/socket.io.js"></script>
 	<script>
+
 		var app = angular.module('ReturnCalls', []);
 
-
-		// Фабрика взята отсюда:
+		// Фабрика работы с сокет.ио взята отсюда:
 		// http://briantford.com/blog/angular-socket-io
 		app.factory('socket',function ($rootScope){
-		    var socket = io.connect();
-		    return {
-		        on: function (eventName,callback){
-		            socket.on(eventName,function(){
-		                var args = [].slice.call(arguments);
-		                $rootScope.$apply(function(){
-		                    if(callback){
-		                        callback.apply(socket,args);
-		                    }
-		                });
-		            });
-		        },
-		        emit: function (eventName, data, callback){
-		            var args = [].slice.call(arguments), cb;
-		            if( typeof args[args.length-1]  == "function" ){
-		                cb = args[args.length-1];
-		                args[args.length-1] = function(){
-		                    var args = [].slice.call(arguments);
-		                    $rootScope.$apply(function(){
-		                        if(cb){
-		                            cb.apply(socket,args);
-		                        }
-		                    });
-		                };
-		            }
-		            socket.emit.apply(socket, args);
-		        }
-		    };
+			var socket = io.connect();
+			return {
+				on: function (eventName,callback){
+					socket.on(eventName,function(){
+						var args = [].slice.call(arguments);
+						$rootScope.$apply(function(){
+							if(callback){
+								callback.apply(socket,args);
+							}
+						});
+					});
+				},
+				emit: function (eventName, data, callback){
+					var args = [].slice.call(arguments), cb;
+					if( typeof args[args.length-1]  == "function" ){
+						cb = args[args.length-1];
+						args[args.length-1] = function(){
+							var args = [].slice.call(arguments);
+							$rootScope.$apply(function(){
+								if(cb){
+									cb.apply(socket,args);
+								}
+							});
+						};
+					}
+					socket.emit.apply(socket, args);
+				}
+			};
 		});
+
+
+		/** ОБСЛУЖИВАЕМ СПИСОК ТЕЛЕФОНОВ **/
 
 		// Работаем с контроллером нашего списка телефонов
 		app.controller('callsList', function ($scope, socket) {
 			
-			// $scope.list = [ { phone: 'Нет данных' }, { phone: '123' } ];
+			$scope.list = [ { phone: 'Нет данных' } ];
 
 			socket.on('calls list', function(list){
 
@@ -153,23 +158,56 @@
 		});
 
 
+		/** ОБСЛУЖИВАЕМ ОПЕРАТОРСКИЙ ЧАТ **/
+
+		// Для отлавливания callback-a рендеринга окна чата,
+		// приходится использовать дополнительную директиву:
+		// Взято: http://www.nodewiz.biz/angular-js-final-callback-after-ng-repeat/
+		app.directive('onLastRepeat', function() {
+			return function(scope, element, attrs) {				
+				if (scope.$last) setTimeout(function(){
+					scope.$emit('onRepeatLast', element, attrs);
+				}, 1);
+			};
+		});
+
+		// Работаем с контроллером операторского чата
+		app.controller('chatBox', function ($scope, socket) {
+			
+			$scope.messages = [];
+
+			// Событие вызывается директивой onLastRepeat для отлавливания callbacka рендера
+			var chatWindow = $('.chatBox')[0];
+			$scope.$on('onRepeatLast', function(scope, element, attrs){
+				chatWindow.scrollTop = chatWindow.scrollHeight; // скролим окно чата всегда вниз				
+			});
+
+			// Событие подгрузки истории чата
+			// (автоматически при установки связи в сокете)
+			socket.on('chat history', function(history){
+				$scope.messages = history;
+			});	
+
+			// Форма отправки нового сообщения
+			$scope.addMessage = function () {
+				socket.emit('chat message', $('#message').val());
+				$('#message').val('');
+				return false;
+			}
+
+			socket.on('chat message', function(msg){
+				$scope.messages.push(msg);
+			});	  
+
+
+		});
 
 
 
+		/* -----------------  */
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+		/** обработка верхней формы запроса обратного звонка **/
 
 
 		// Обработка запроса обратного звонка
@@ -187,51 +225,6 @@
 			
 			return false;
 		});	  
-
-
-/*
-
-
-
-		// Инициализируем сокет
-		var socket = io();
-
-		$('#chat').submit(function(){
-			socket.emit('chat message', $('#m').val());
-			$('#m').val('');
-			return false;
-		});	  
-
-		// Событие нового сообщения чата
-		var chatbox = $('#messages');
-
-		socket.on('chat message', function(msg){
-			$('#messages').append($('<li>').text(msg));
-			chatbox[0].scrollTop = chatbox[0].scrollHeight;
-		});	  
-
-		// Событие подгрузки истории чата
-		// (автоматически при установки связи в сокете)
-		socket.on('history', function(history){
-			$.each(history, function(i, val) {
-				$('#messages').append($('<li class="old">').text(val.time + " - " + val.message));
-			});
-			chatbox[0].scrollTop = chatbox[0].scrollHeight;
-		});	
-
-		// Обработка списка телефонов
-		socket.on('calls list', function(list){
-			$('#calls').html('');
-			console.log(list);
-			$.each(list, function(i, val) {
-				$('#calls').append($('<li>').text(val.time + " - " + val.phone));
-			})
-		});
-		  */
-
-
-		// Angular
-
 
 
 	</script>

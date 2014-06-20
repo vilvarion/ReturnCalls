@@ -70,15 +70,13 @@ io.on('connection', function(socket){
 
 	// Fetching chat history
 	Chat.find({}, function (err, calls) {
-		var chatMap = {};
+		var chatMap = [];
 		calls.forEach(function(chat) {
-			chatMap[chat._id] = chat;
+			chatMap.push(chat);
 		});
-		socket.emit('history', chatMap);  
+		socket.emit('chat history', chatMap);  
 	});
 
-
-	console.log('a user connected');
 
 	socket.on('chat message', function(msg){
 
@@ -97,13 +95,13 @@ io.on('connection', function(socket){
 			});    	
 		}
 
-		io.sockets.emit('chat message', getTime() + " - " + msg);
+		io.sockets.emit('chat message', { message: msg, time: getTime() });
 
 	});
 
 
 	socket.on('disconnect', function(){
-		console.log('user disconnected');
+		// console.log('user disconnected');
 	});  
 
 });
