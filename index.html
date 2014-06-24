@@ -15,6 +15,10 @@
 			.frontend { height: 150px; background-color: #666; padding-top:30px; padding-bottom:40px; margin-bottom:40px; border-bottom:2px dashed #333; }
 			.close_div { position:absolute; top:10px; right:25px; font-size:28px; color:#ccc; cursor:pointer; }
 			.operatior-interface { margin-top:40px; }
+			.call-done-false { background-color: #fde1d8; }
+			.call-done-true { background-color: #ffffff; }
+			a.btn { text-decoration: none; }
+			.dotted { text-decoration: none !important; border-bottom: 1px dotted #08c; font-size: 12px; }
 		</style>
 		<script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
 		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.18/angular.min.js"></script>
@@ -29,12 +33,12 @@
 
 					<form class="form-inline" id="returncall">
 						<h4>Заказ обратного звонка</h4>
-							<div class="input-group">
-							<input id="phone" name="phone" type="text" class="form-control">
-							<span class="input-group-btn">
-								<input type="submit" class="btn btn-warning" type="button" value="перезвоните мне" />
-							</span>
-							</div>
+						<div class="input-group">
+						<input id="phone" name="phone" type="text" class="form-control">
+						<span class="input-group-btn">
+							<input type="submit" class="btn btn-warning" type="button" value="перезвоните мне" />
+						</span>
+						</div>
 					</form>
 
 				</div>
@@ -42,7 +46,6 @@
 			<div class="close_div" onclick="$('.frontend').hide()">x</div>
 		</div>
 	</div>
-
 
 
 	<div class="container operatior-interface">
@@ -53,13 +56,16 @@
 						<div class="panel-heading">Последние запросы обратных звонков</div>
 						<div class="panel-body" ng-controller="callsList">
 
-							<table class="table table-striped">
+							<table class="table">
 								<thead>
 									<tr><td>Дата</td><td>Телефон</td><td>Комментарий</td><td>Выполнение</td></tr>
 								</thead>
 								<tbody>
-									<tr ng-repeat="item in list">
-										<td>{{item.time}}</td><td>{{item.phone}}</td><td>{{item.comment}}</td><td></td>
+									<tr ng-repeat="item in list" class="call-done-{{item.done}}">
+										<td>{{item.time}}</td>
+										<td>{{item.phone}}</td>
+										<td>{{item.comment}} <a href="#" ng-click="addComment(item._id)" class="dotted">edit</a></td>
+										<td><a href="#" ng-hide="item.done" ng-click="makeDone(item._id)" class="btn btn-primary btn-xs">выполнен</a></td>
 									</tr>
 								</tbody>
 							</table>
@@ -72,6 +78,15 @@
 
 			</div>
 			<div class="col-xs-4">
+
+					<div class="panel panel-primary" ng-controller="userBox">
+						<div class="panel-heading">Операторы онлайн ({{online()}})</div>
+						<div class="panel-body">
+							<ul class="chatBox">
+								<li ng-repeat="item in users" on-last-repeat>{{item._id}} {{item.name}} </li>
+							</ul>
+						</div>
+					</div>
 
 					<div class="panel panel-primary" ng-controller="chatBox">
 						<div class="panel-heading">Операторский чат</div>
@@ -90,7 +105,7 @@
 								</span>
 								</div>
 
-						</form> 			
+							</form> 			
 						</div>
 					</div>
 
@@ -147,13 +162,64 @@
 			$scope.list = [ { phone: 'Нет данных' } ];
 
 			socket.on('calls list', function(list){
-
-
-				console.log(list);
-
 				$scope.list = list;
-
 			});		
+
+
+			// Кнопка "выполнено"
+			$scope.makeDone = function(id) {
+				socket.emit('call is done', id);
+				return false;
+			}
+
+			// Добавление комментария
+			$scope.addComment = function(id) {
+				var newComment = prompt('Введите новый комментарий');
+				socket.emit('call comment update', { _id: id, comment: newComment });
+				return false;
+			}			
+
+			// Событие обновления данных по сокету
+			socket.on('calls updates', function(msg){
+				angular.forEach($scope.list, function(item) {
+					if(item._id == msg._id) {
+						angular.extend(item, msg);
+						console.log(item);
+					}
+				});
+			});		
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		});
+
+
+		/** Блок с пользователями онлайн **/
+		app.controller('userBox', function ($scope, socket) {
+
+			$scope.online = function() {
+				return $scope.users.length;
+			}
+
+			$scope.users = [];
+
+			socket.on('list users', function(users){
+				$scope.users = users;
+			});	
 
 		});
 

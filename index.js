@@ -1,3 +1,10 @@
+/*
+GLOBAL TODO:
+1. CRUD for phone list
+2. Звуковое оповещение о новом заказе
+*/
+
+
 // Init
 var express = require('express'), app = express();
 var http = require('http').Server(app);
@@ -14,6 +21,9 @@ var Chat = mongoose.model('chat', { user: String, message: String, time: String 
 var ReturnCalls = mongoose.model('calls', { 
 		phone: String, name: String, time: String, comment: String, operator: String, done: Boolean 
 	});
+
+var Users = []; // Пока что никакого модуля для пользователей, только массив
+
 
 db.on('error', function (err) {
 	console.log('connection error:', err.message);
@@ -66,7 +76,38 @@ app.post('/addReturnCall', function(req, res){
 
 io.on('connection', function(socket){
 
+	var userId = (socket.id).toString().substr(0, 7);
+	Users.push({  _id: userId });
+	io.sockets.emit('list users', Users);  
+	console.log('connect user: ' + userId);
+
 	fetchCalls(socket);
+
+
+
+	socket.on('call is done', function(msg) {
+		ReturnCalls.findOneAndUpdate({ _id: msg }, { done: true }, function(result) {
+
+			io.sockets.emit('calls updates', { _id: msg, done: true });
+
+		});
+	});
+
+	socket.on('call comment update', function(msg) {
+		ReturnCalls.findOneAndUpdate({ _id: msg._id }, { comment: msg.comment }, function(result) {
+
+			io.sockets.emit('calls updates', { _id: msg._id, comment: msg.comment });
+
+		});
+	});
+
+
+
+
+
+
+
+	/* Chat */
 
 	// Fetching chat history
 	Chat.find({}, function (err, calls) {
@@ -76,7 +117,6 @@ io.on('connection', function(socket){
 		});
 		socket.emit('chat history', chatMap);  
 	});
-
 
 	socket.on('chat message', function(msg){
 
@@ -101,7 +141,15 @@ io.on('connection', function(socket){
 
 
 	socket.on('disconnect', function(){
-		// console.log('user disconnected');
+		
+		console.log('user disconnected: ' + userId);
+
+		Users.forEach(function (item, i) {
+			if(item._id == userId) {
+				Users.splice(i, 1);
+				io.sockets.emit('list users', Users); 
+			}
+		});
 	});  
 
 });
