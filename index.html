@@ -6,11 +6,11 @@
 		<style>
 			h4 { color: white; }
 			thead { color: #999; }
-			.chatBox { list-style-type: none; margin: 0; padding: 0; }
-			.chatBox { max-height: 400px; overflow: auto; }
-			.chatBox li { padding: 5px 10px; }
-			.chatBox li.old { color: #999; }
-			.chatBox li:nth-child(odd), #calls li:nth-child(odd) { background: #f2f2f2; }
+			.stripped-ul { list-style-type: none; margin: 0; padding: 0; }
+			.stripped-ul { max-height: 400px; overflow: auto; }
+			.stripped-ul li { padding: 5px 10px; list-style-type: none; }
+			.stripped-ul li.old { color: #999; }
+			.stripped-ul li:nth-child(odd), #calls li:nth-child(odd) { background: #f2f2f2; }
 			body { padding-top: 0px; }
 			.frontend { height: 150px; background-color: #666; padding-top:30px; padding-bottom:40px; margin-bottom:40px; border-bottom:2px dashed #333; }
 			.close_div { position:absolute; top:10px; right:25px; font-size:28px; color:#ccc; cursor:pointer; }
@@ -19,13 +19,40 @@
 			.call-done-true { background-color: #ffffff; }
 			a.btn { text-decoration: none; }
 			.dotted { text-decoration: none !important; border-bottom: 1px dotted #08c; font-size: 12px; }
+			.overlay { position: fixed; width: 100%; height: 100%; background-color: #eee; opacity: 1; z-index: 200; }
+			.modal-window { position: fixed; z-index: 300; top: 400px; width: 400px; left: 35%; }
+			.modal-window, .overlay { display: none; }
 		</style>
 		<script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
 		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.18/angular.min.js"></script>
 
 	</head>
 	<body>
-	
+
+	<div class="modal-window">
+							
+		<div class="panel panel-primary">
+			<div class="panel-heading">Пожалуйста, введите ваш логин</div>
+			<div class="panel-body" ng-controller="userModal">
+
+				<form action="" id="chat" ng-submit="addName()" class="form-inline">
+
+					<div class="input-group">
+					<input id="username" autocomplete="off" autofocus value="{{name}}" type="text" class="form-control">
+					<span class="input-group-btn">
+						<input type="submit" class="btn btn-primary" type="button" value="войти" />
+					</span>
+					</div>
+
+				</form> 	
+
+			</div>
+		</div> 
+
+
+	</div>
+	<div class="overlay"></div>
+
 	<div class="frontend">
 		<div class="container">
 			<div class="row">
@@ -82,8 +109,8 @@
 					<div class="panel panel-primary" ng-controller="userBox">
 						<div class="panel-heading">Операторы онлайн ({{online()}})</div>
 						<div class="panel-body">
-							<ul class="chatBox">
-								<li ng-repeat="item in users" on-last-repeat>{{item._id}} {{item.name}} </li>
+							<ul class="stripped-ul">
+								<li ng-repeat="item in users" on-last-repeat>{{item.name}} </li>
 							</ul>
 						</div>
 					</div>
@@ -91,8 +118,8 @@
 					<div class="panel panel-primary" ng-controller="chatBox">
 						<div class="panel-heading">Операторский чат</div>
 						<div class="panel-body">
-							<ul class="chatBox">
-								<li ng-repeat="item in messages" on-last-repeat>{{item.message}}</li>
+							<ul id="chat-box" class="stripped-ul">
+								<li ng-repeat="item in messages" on-last-repeat>{{item.time}} <b>{{item.user}}</b> &nbsp; <i>{{item.message}}</i></li>
 							</ul>
 						</div>
 						<div class="panel-footer">
@@ -188,23 +215,34 @@
 					}
 				});
 			});		
-			
 
 
 
 
+		});
 
 
+		app.controller('userModal', function ($scope, socket) {
 
+			$scope.username = localStorage.getItem('username');
 
+			if($scope.username === null || $scope.username.length === 0) {
+				$('.overlay').show();
+				$('.modal-window').show();
+			}else{
+				socket.emit('set username', { name: $scope.username });
+			}
 
+			$scope.addName = function() {
+				$scope.username = $('#username').val();
+				socket.emit('set username', { name: $scope.username });
+				localStorage.setItem('username', $scope.username);
 
-
-
-
-
-
-
+				$('.modal-window').hide();
+				$('.overlay').animate({opacity: 0}, 500, function() {
+					$('.overlay').hide();
+				});
+			}
 		});
 
 
@@ -243,20 +281,20 @@
 			$scope.messages = [];
 
 			// Событие вызывается директивой onLastRepeat для отлавливания callbacka рендера
-			var chatWindow = $('.chatBox')[0];
+			var chatWindow = $('#chat-box')[0];
 			$scope.$on('onRepeatLast', function(scope, element, attrs){
-				chatWindow.scrollTop = chatWindow.scrollHeight; // скролим окно чата всегда вниз				
+				chatWindow.scrollTop = chatWindow.scrollHeight; // скролим окно чата всегда вниз	
 			});
 
 			// Событие подгрузки истории чата
 			// (автоматически при установки связи в сокете)
 			socket.on('chat history', function(history){
-				$scope.messages = history;
+				$scope.messages = history.reverse();
 			});	
 
 			// Форма отправки нового сообщения
 			$scope.addMessage = function () {
-				socket.emit('chat message', $('#message').val());
+				socket.emit('chat message', { user: localStorage.getItem('username'), message: $('#message').val() });
 				$('#message').val('');
 				return false;
 			}
@@ -279,12 +317,8 @@
 		// Обработка запроса обратного звонка
 		$('#returncall').submit(function(){
 
-			var data = {
-				phone: $('#phone').val()
-			};
-
 			// Отправка введенного телефона методом POST
-			$.post('/addReturnCall', data, function(res) {
+			$.post('/addReturnCall', { phone: $('#phone').val() }, function(res) {
 				console.log(res);
 				$('#returncall').html('<h4 style="color:white">Спасибо!<br/> Вам перезвонят в течении 10 минут.</h4>');
 			});

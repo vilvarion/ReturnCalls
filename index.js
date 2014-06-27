@@ -9,6 +9,7 @@ GLOBAL TODO:
 var express = require('express'), app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+var _ = require('underscore');
 var mongoose = require('mongoose').connect('mongodb://localhost/returncalls');
 var db = mongoose.connection;
 
@@ -84,6 +85,11 @@ io.on('connection', function(socket){
 	fetchCalls(socket);
 
 
+	socket.on('set username', function(msg) {
+		_.extend(Users, [{ _id: userId, name: msg.name }]);
+		io.sockets.emit('list users', Users); 
+	});
+
 
 	socket.on('call is done', function(msg) {
 		ReturnCalls.findOneAndUpdate({ _id: msg }, { done: true }, function(result) {
@@ -110,21 +116,18 @@ io.on('connection', function(socket){
 	/* Chat */
 
 	// Fetching chat history
-	Chat.find({}, function (err, calls) {
-		var chatMap = [];
-		calls.forEach(function(chat) {
-			chatMap.push(chat);
-		});
-		socket.emit('chat history', chatMap);  
+	Chat.find().sort({'_id': -1}).limit(20)
+	.exec(function (err, calls) {
+		socket.emit('chat history', calls);  
 	});
 
 	socket.on('chat message', function(msg){
 
-		console.log('message: ' + msg);
+		if(msg.message.length>0) {
 
-		if(msg.length>0) {
+			msg.time = getTime();
 
-			var chat = new Chat({ message: msg, time: getTime() });
+			var chat = new Chat(msg);
 
 			chat.save(function (err) {
 				if (err) {
@@ -133,9 +136,10 @@ io.on('connection', function(socket){
 					console.log('chat saving success..');
 				}
 			});    	
-		}
 
-		io.sockets.emit('chat message', { message: msg, time: getTime() });
+			io.sockets.emit('chat message', chat.toJSON());
+	
+		}
 
 	});
 
