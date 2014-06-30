@@ -1,20 +1,12 @@
-/*
-GLOBAL TODO:
-1. CRUD for phone list
-2. Звуковое оповещение о новом заказе
-*/
-
 
 // Init
 var express = require('express'), app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
-var _ = require('underscore');
 var mongoose = require('mongoose').connect('mongodb://localhost/returncalls');
 var db = mongoose.connection;
 
 app.use(require('connect').bodyParser());
-
 
 
 // DB
@@ -23,7 +15,33 @@ var ReturnCalls = mongoose.model('calls', {
 		phone: String, name: String, time: String, comment: String, operator: String, done: Boolean 
 	});
 
-var Users = []; // Пока что никакого модуля для пользователей, только массив
+
+// Я не брал никакого стандартного модуля для работы пользователей.
+// Сделал сам простенький объект работы с ними.
+var Users = {
+	// массив пользователей
+	list: [],
+	// функция выборки текущего пользователя из массива
+	// возвращает объект { _id, name }
+	current: function (socket) {
+		var current;
+		Users.list.forEach(function (user) {
+			if(user._id == (socket.id).toString()) {
+				current = user;
+				return false;
+			}
+		});
+		return current;
+	},
+	// функция присвоения имени пользователя
+	setCurrentName:  function (socket, name) {
+		Users.list.forEach(function (user) {
+			if(user._id == (socket.id).toString()) {
+				user.name = name;
+			}
+		});
+	}
+};
 
 
 db.on('error', function (err) {
@@ -77,17 +95,22 @@ app.post('/addReturnCall', function(req, res){
 
 io.on('connection', function(socket){
 
-	var userId = (socket.id).toString().substr(0, 7);
-	Users.push({  _id: userId });
-	io.sockets.emit('list users', Users);  
-	console.log('connect user: ' + userId);
+	Users.list.push({  _id: (socket.id).toString() });
+	io.sockets.emit('list users', Users.list);  
+
+	console.log('Users.current(socket)');
+	console.log(Users.current(socket));
+	console.log('Users.list');
+	console.log(Users.list);
 
 	fetchCalls(socket);
 
 
 	socket.on('set username', function(msg) {
-		_.extend(Users, [{ _id: userId, name: msg.name }]);
-		io.sockets.emit('list users', Users); 
+		Users.setCurrentName(socket, msg.name);
+		console.log('Users.list + username');
+		console.log(Users.list);		
+		io.sockets.emit('list users', Users.list); 
 	});
 
 
@@ -107,10 +130,11 @@ io.on('connection', function(socket){
 		});
 	});
 
-
-
-
-
+	socket.on('call operator update', function(msg) {
+		ReturnCalls.findOneAndUpdate({ _id: msg._id }, { operator: Users.current(socket).name }, function(err, res) {
+			io.sockets.emit('calls updates', res);
+		});
+	});
 
 
 	/* Chat */
@@ -138,20 +162,30 @@ io.on('connection', function(socket){
 			});    	
 
 			io.sockets.emit('chat message', chat.toJSON());
-	
 		}
+	});
 
+	
+	// Сообщения, что пользователь начал и закончил печатать
+	// Рассылаем всем кроме него самого
+	socket.on('chat user start writing', function(msg){
+		socket.broadcast.emit('chat user start writing', { user: Users.current(socket).name });
+	});
+
+	socket.on('chat user stop writing', function(msg){
+		socket.broadcast.emit('chat user stop writing', { user: Users.current(socket).name });
 	});
 
 
+	// Отключение пользователя от системы
 	socket.on('disconnect', function(){
 		
-		console.log('user disconnected: ' + userId);
+		console.log('user disconnected: ' + Users.current(socket)._id);
 
-		Users.forEach(function (item, i) {
-			if(item._id == userId) {
-				Users.splice(i, 1);
-				io.sockets.emit('list users', Users); 
+		Users.list.forEach(function (item, i) {
+			if(item._id == Users.current(socket)._id) {
+				Users.list.splice(i, 1);
+				io.sockets.emit('list users', Users.list); 
 			}
 		});
 	});  

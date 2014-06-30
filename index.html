@@ -11,12 +11,14 @@
 			.stripped-ul li { padding: 5px 10px; list-style-type: none; }
 			.stripped-ul li.old { color: #999; }
 			.stripped-ul li:nth-child(odd), #calls li:nth-child(odd) { background: #f2f2f2; }
+			.stripped-ul li.chat-writer { font-size: 80%; color: #999; background-color: white; font-style: italic; }
 			body { padding-top: 0px; }
 			.frontend { height: 150px; background-color: #666; padding-top:30px; padding-bottom:40px; margin-bottom:40px; border-bottom:2px dashed #333; }
 			.close_div { position:absolute; top:10px; right:25px; font-size:28px; color:#ccc; cursor:pointer; }
 			.operatior-interface { margin-top:40px; }
 			.call-done-false { background-color: #fde1d8; }
 			.call-done-true { background-color: #ffffff; }
+			.call-done-false.call-operator-taken { background-color: #ffffcc; }
 			a.btn { text-decoration: none; }
 			.dotted { text-decoration: none !important; border-bottom: 1px dotted #08c; font-size: 12px; }
 			.overlay { position: fixed; width: 100%; height: 100%; background-color: #eee; opacity: 1; z-index: 200; }
@@ -44,7 +46,8 @@
 					</span>
 					</div>
 
-				</form> 	
+				</form>
+				<small>Впишите любое имя или ник. Проверки никакой нет.</small>
 
 			</div>
 		</div> 
@@ -88,11 +91,12 @@
 									<tr><td>Дата</td><td>Телефон</td><td>Комментарий</td><td>Выполнение</td></tr>
 								</thead>
 								<tbody>
-									<tr ng-repeat="item in list" class="call-done-{{item.done}}">
+									<tr ng-repeat="item in list" class="call-done-{{item.done}}" ng-class="{ 'call-operator-taken': item.operator }">
 										<td>{{item.time}}</td>
 										<td>{{item.phone}}</td>
 										<td>{{item.comment}} <a href="#" ng-click="addComment(item._id)" class="dotted">edit</a></td>
-										<td><a href="#" ng-hide="item.done" ng-click="makeDone(item._id)" class="btn btn-primary btn-xs">выполнен</a></td>
+										<td>{{item.operator}} <a href="#" ng-hide="item.done" ng-if="!item.operator" ng-click="takeOrder(item._id)" class="btn btn-info btn-xs">на обработку</a></td>
+										<td><a href="#" ng-hide="item.done || item.operator != username" ng-click="makeDone(item._id)" class="btn btn-primary btn-xs">выполнен</a></td>
 									</tr>
 								</tbody>
 							</table>
@@ -120,13 +124,14 @@
 						<div class="panel-body">
 							<ul id="chat-box" class="stripped-ul">
 								<li ng-repeat="item in messages" on-last-repeat>{{item.time}} <b>{{item.user}}</b> &nbsp; <i>{{item.message}}</i></li>
+								<li ng-repeat="writer in writers" class="chat-writer" on-last-repeat>{{writer}} печатает сообщение...</li>
 							</ul>
 						</div>
 						<div class="panel-footer">
 							<form action="" id="chat" ng-submit="addMessage()" class="form-inline">
 
 								<div class="input-group">
-								<input id="message" autocomplete="off" type="text" class="form-control">
+								<input id="message" autocomplete="off" ng-model="currentInput" type="text" class="form-control">
 								<span class="input-group-btn">
 									<input type="submit" class="btn btn-primary" type="button" value="отправить" />
 								</span>
@@ -187,6 +192,7 @@
 		app.controller('callsList', function ($scope, socket) {
 			
 			$scope.list = [ { phone: 'Нет данных' } ];
+			$scope.username = localStorage.getItem('username');
 
 			socket.on('calls list', function(list){
 				$scope.list = list;
@@ -199,10 +205,18 @@
 				return false;
 			}
 
+			// Присвоение заявки оператором
+			$scope.takeOrder = function(id) {
+				socket.emit('call operator update', { _id: id });
+				return false;
+			}
+
 			// Добавление комментария
 			$scope.addComment = function(id) {
 				var newComment = prompt('Введите новый комментарий');
-				socket.emit('call comment update', { _id: id, comment: newComment });
+				if(newComment) {
+					socket.emit('call comment update', { _id: id, comment: newComment });
+				}
 				return false;
 			}			
 
@@ -211,13 +225,9 @@
 				angular.forEach($scope.list, function(item) {
 					if(item._id == msg._id) {
 						angular.extend(item, msg);
-						console.log(item);
 					}
 				});
 			});		
-
-
-
 
 		});
 
@@ -278,7 +288,8 @@
 		// Работаем с контроллером операторского чата
 		app.controller('chatBox', function ($scope, socket) {
 			
-			$scope.messages = [];
+			$scope.messages = []; // Здесь храним сообщения чата
+			$scope.writers = []; // А здесь тех, кто пишет сообщение прямо сейчас
 
 			// Событие вызывается директивой onLastRepeat для отлавливания callbacka рендера
 			var chatWindow = $('#chat-box')[0];
@@ -296,13 +307,35 @@
 			$scope.addMessage = function () {
 				socket.emit('chat message', { user: localStorage.getItem('username'), message: $('#message').val() });
 				$('#message').val('');
+				socket.emit('chat user stop writing', {});
 				return false;
 			}
 
+			// Добавляем новое сообщение в чат
 			socket.on('chat message', function(msg){
 				$scope.messages.push(msg);
 			});	  
 
+			// Следим и выводим, если кто-то пишет в чате
+			$scope.$watch('currentInput', function() {
+				if(typeof $scope.currentInput != "undefined") {
+					if($scope.currentInput.length > 0) {
+						socket.emit('chat user start writing', {});
+					}else{
+						socket.emit('chat user stop writing', {});
+					}
+				}
+			});
+
+			socket.on('chat user start writing', function(msg){
+				if($scope.writers.indexOf(msg.user) === -1) {
+					$scope.writers.push(msg.user);
+				}
+			});	  
+
+			socket.on('chat user stop writing', function(msg){
+				$scope.writers.splice($scope.writers.indexOf(msg.user), 1);
+			});	  
 
 		});
 
