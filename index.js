@@ -56,7 +56,7 @@ function getTime () {
 	return (new Date).toLocaleTimeString();
 }
 function fetchCalls (target) {
-	// Fetching returncalls history
+	// Вытаскиваем историю заявок звонков
 	ReturnCalls.find({})
 	.limit(20).sort({'_id': -1})
 	.exec(function (err, calls) {
@@ -137,9 +137,9 @@ io.on('connection', function(socket){
 	});
 
 
-	/* Chat */
+	/* Чат */
 
-	// Fetching chat history
+	// вытаскиваем историю чата
 	Chat.find().sort({'_id': -1}).limit(20)
 	.exec(function (err, calls) {
 		socket.emit('chat history', calls);  

@@ -1,6 +1,6 @@
 {
-  "name": "socket-chat-example",
-  "version": "0.0.1",
+  "name": "ReturnCalls",
+  "version": "0.0.9",
   "description": "my first socket.io app",
   "dependencies": {
     "connect": "^2.19.6",
