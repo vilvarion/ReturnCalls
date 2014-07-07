@@ -1,0 +1,99 @@
+body { 
+	padding-top: 0px; 
+}
+h4 { 
+	color: white; 
+}
+thead { 
+	color: #999; 
+}
+.stripped-ul { 
+	list-style-type: none;
+	margin: 0;
+	padding: 0; 
+}
+.stripped-ul { 
+	max-height: 400px; 
+	overflow: auto; 
+}
+.stripped-ul li { 
+	padding: 5px 10px; 
+	list-style-type: none; 
+}
+.stripped-ul li.old { 
+	color: #999; 
+}
+.stripped-ul li:nth-child(odd), 
+	  #calls li:nth-child(odd) { 
+	background: #f2f2f2; 
+}
+.stripped-ul li.chat-writer { 
+	font-size: 80%; 
+	color: #999; 
+	background-color: white; 
+	font-style: italic; 
+}
+.frontend { 
+	height: 150px; 
+	background-color: #666; 
+	padding-top: 30px; 
+	padding-bottom: 40px; 
+	margin-bottom: 40px; 
+	border-bottom: 2px dashed #333; 
+}
+.close_div { 
+	position: absolute; 
+	top:10px; right:25px; 
+	font-size: 28px; 
+	color: #ccc; 
+	cursor: pointer; 
+}
+.operatior-interface { 
+	margin-top: 50px; 
+}
+.call-done-false { 
+	background-color: #fde1d8; 
+}
+.call-done-true { 
+	background-color: #ffffff; 
+}
+.call-done-false.call-operator-taken { 
+	background-color: #ffffcc; 
+}
+a.btn { 
+	text-decoration: none; 
+}
+.dotted { 
+	text-decoration: none !important;
+	border-bottom: 1px dotted #08c;
+	font-size: 12px; 
+}
+.overlay { 
+	position: fixed; 
+	width: 100%; 
+	height: 100%; 
+	background-color: #eee; 
+	opacity: 1; 
+	z-index: 200; 
+}
+.modal-window { 
+	position: fixed; 
+	z-index: 300; 
+	top: 400px; 
+	width: 400px; 
+	left: 35%; 
+}
+/*.modal-window, .overlay { 
+	display: none; 
+}*/
+
+.connection-lost-warning {
+	background-color: #ffffaa;
+	color: #ff6655;
+	position: absolute;
+	padding: 5px 0px;
+	border-bottom: 1px solid #ccc;
+	top: 0px;
+	width: 100%;
+	text-align: center;
+}

@@ -1,0 +1,24 @@
+<div class="modal-window" ng-show="{{showModal}}">
+						
+	<div class="panel panel-primary">
+		<div class="panel-heading">Пожалуйста, введите ваш логин</div>
+		<div class="panel-body">
+
+			<form novalidate ng-submit="addName()" class="form-inline">
+
+				<div class="input-group">
+				<input id="username" autocomplete="off" autofocus value="{{name}}" type="text" class="form-control">
+				<span class="input-group-btn">
+					<input type="submit" class="btn btn-primary" type="button" value="войти" />
+				</span>
+				</div>
+
+			</form>
+			<small>Впишите любое имя или ник. Проверки никакой нет.</small>
+
+		</div>
+	</div> 
+
+
+</div>
+<div class="overlay" ng-show="{{showModal}}"></div>

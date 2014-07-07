@@ -3,60 +3,13 @@
 	<head>
 		<title>ReturnCalls</title>
 		<link rel="stylesheet" type="text/css" href="http://bootswatch.com/lumen/bootstrap.min.css">
-		<style>
-			h4 { color: white; }
-			thead { color: #999; }
-			.stripped-ul { list-style-type: none; margin: 0; padding: 0; }
-			.stripped-ul { max-height: 400px; overflow: auto; }
-			.stripped-ul li { padding: 5px 10px; list-style-type: none; }
-			.stripped-ul li.old { color: #999; }
-			.stripped-ul li:nth-child(odd), #calls li:nth-child(odd) { background: #f2f2f2; }
-			.stripped-ul li.chat-writer { font-size: 80%; color: #999; background-color: white; font-style: italic; }
-			body { padding-top: 0px; }
-			.frontend { height: 150px; background-color: #666; padding-top:30px; padding-bottom:40px; margin-bottom:40px; border-bottom:2px dashed #333; }
-			.close_div { position:absolute; top:10px; right:25px; font-size:28px; color:#ccc; cursor:pointer; }
-			.operatior-interface { margin-top:40px; }
-			.call-done-false { background-color: #fde1d8; }
-			.call-done-true { background-color: #ffffff; }
-			.call-done-false.call-operator-taken { background-color: #ffffcc; }
-			a.btn { text-decoration: none; }
-			.dotted { text-decoration: none !important; border-bottom: 1px dotted #08c; font-size: 12px; }
-			.overlay { position: fixed; width: 100%; height: 100%; background-color: #eee; opacity: 1; z-index: 200; }
-			.modal-window { position: fixed; z-index: 300; top: 400px; width: 400px; left: 35%; }
-			.modal-window, .overlay { display: none; }
-		</style>
-		<script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
-		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.18/angular.min.js"></script>
-
+		<link rel="stylesheet" href="/public/style.css">
 	</head>
 	<body>
 
-	<div class="modal-window">
-							
-		<div class="panel panel-primary">
-			<div class="panel-heading">Пожалуйста, введите ваш логин</div>
-			<div class="panel-body" ng-controller="userModal">
+	<login-modal></login-modal>
 
-				<form action="" id="chat" ng-submit="addName()" class="form-inline">
-
-					<div class="input-group">
-					<input id="username" autocomplete="off" autofocus value="{{name}}" type="text" class="form-control">
-					<span class="input-group-btn">
-						<input type="submit" class="btn btn-primary" type="button" value="войти" />
-					</span>
-					</div>
-
-				</form>
-				<small>Впишите любое имя или ник. Проверки никакой нет.</small>
-
-			</div>
-		</div> 
-
-
-	</div>
-	<div class="overlay"></div>
-
-	<div class="frontend">
+	<div class="frontend hide">
 		<div class="container">
 			<div class="row">
 				<div class="col-xs-4">
@@ -77,6 +30,7 @@
 		</div>
 	</div>
 
+	<div class="connection-lost-warning" ng-controller="onlineCheck" ng-hide="online">Ой! Связь с сервером потеряна! Пробуем переподключиться...</div>
 
 	<div class="container operatior-interface">
 		<div class="row">
@@ -84,22 +38,9 @@
 
 					<div class="panel panel-primary">
 						<div class="panel-heading">Последние запросы обратных звонков</div>
-						<div class="panel-body" ng-controller="callsList">
+						<div class="panel-body">
 
-							<table class="table">
-								<thead>
-									<tr><td>Дата</td><td>Телефон</td><td>Комментарий</td><td>Выполнение</td></tr>
-								</thead>
-								<tbody>
-									<tr ng-repeat="item in list" class="call-done-{{item.done}}" ng-class="{ 'call-operator-taken': item.operator }">
-										<td>{{item.time}}</td>
-										<td>{{item.phone}}</td>
-										<td>{{item.comment}} <a href="#" ng-click="addComment(item._id)" class="dotted">edit</a></td>
-										<td>{{item.operator}} <a href="#" ng-hide="item.done" ng-if="!item.operator" ng-click="takeOrder(item._id)" class="btn btn-info btn-xs">на обработку</a></td>
-										<td><a href="#" ng-hide="item.done || item.operator != username" ng-click="makeDone(item._id)" class="btn btn-primary btn-xs">выполнен</a></td>
-									</tr>
-								</tbody>
-							</table>
+							<calls-list></calls-list>
 
 						</div>
 						<div class="panel-footer">
@@ -110,254 +51,30 @@
 			</div>
 			<div class="col-xs-4">
 
-					<div class="panel panel-primary" ng-controller="userBox">
-						<div class="panel-heading">Операторы онлайн ({{online()}})</div>
-						<div class="panel-body">
-							<ul class="stripped-ul">
-								<li ng-repeat="item in users" on-last-repeat>{{item.name}} </li>
-							</ul>
-						</div>
-					</div>
+					<show-online></show-online>
 
-					<div class="panel panel-primary" ng-controller="chatBox">
-						<div class="panel-heading">Операторский чат</div>
-						<div class="panel-body">
-							<ul id="chat-box" class="stripped-ul">
-								<li ng-repeat="item in messages" on-last-repeat>{{item.time}} <b>{{item.user}}</b> &nbsp; <i>{{item.message}}</i></li>
-								<li ng-repeat="writer in writers" class="chat-writer" on-last-repeat>{{writer}} печатает сообщение...</li>
-							</ul>
-						</div>
-						<div class="panel-footer">
-							<form action="" id="chat" ng-submit="addMessage()" class="form-inline">
-
-								<div class="input-group">
-								<input id="message" autocomplete="off" ng-model="currentInput" type="text" class="form-control">
-								<span class="input-group-btn">
-									<input type="submit" class="btn btn-primary" type="button" value="отправить" />
-								</span>
-								</div>
-
-							</form> 			
-						</div>
-					</div>
+					<chat-box></chat-box>
 
 			</div>
 		</div>
 	</div>
 
 
-
+	<script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.18/angular.min.js"></script>
 	<script src="/socket.io/socket.io.js"></script>
+	<script src="/public/client.js"></script>
 	<script>
-
-		var app = angular.module('ReturnCalls', []);
-
-		// Фабрика работы с сокет.ио взята отсюда:
-		// http://briantford.com/blog/angular-socket-io
-		app.factory('socket',function ($rootScope){
-			var socket = io.connect();
-			return {
-				on: function (eventName,callback){
-					socket.on(eventName,function(){
-						var args = [].slice.call(arguments);
-						$rootScope.$apply(function(){
-							if(callback){
-								callback.apply(socket,args);
-							}
-						});
-					});
-				},
-				emit: function (eventName, data, callback){
-					var args = [].slice.call(arguments), cb;
-					if( typeof args[args.length-1]  == "function" ){
-						cb = args[args.length-1];
-						args[args.length-1] = function(){
-							var args = [].slice.call(arguments);
-							$rootScope.$apply(function(){
-								if(cb){
-									cb.apply(socket,args);
-								}
-							});
-						};
-					}
-					socket.emit.apply(socket, args);
-				}
-			};
-		});
-
-
-		/** ОБСЛУЖИВАЕМ СПИСОК ТЕЛЕФОНОВ **/
-
-		// Работаем с контроллером нашего списка телефонов
-		app.controller('callsList', function ($scope, socket) {
-			
-			$scope.list = [ { phone: 'Нет данных' } ];
-			$scope.username = localStorage.getItem('username');
-
-			socket.on('calls list', function(list){
-				$scope.list = list;
-			});		
-
-
-			// Кнопка "выполнено"
-			$scope.makeDone = function(id) {
-				socket.emit('call is done', id);
-				return false;
-			}
-
-			// Присвоение заявки оператором
-			$scope.takeOrder = function(id) {
-				socket.emit('call operator update', { _id: id });
-				return false;
-			}
-
-			// Добавление комментария
-			$scope.addComment = function(id) {
-				var newComment = prompt('Введите новый комментарий');
-				if(newComment) {
-					socket.emit('call comment update', { _id: id, comment: newComment });
-				}
-				return false;
-			}			
-
-			// Событие обновления данных по сокету
-			socket.on('calls updates', function(msg){
-				angular.forEach($scope.list, function(item) {
-					if(item._id == msg._id) {
-						angular.extend(item, msg);
-					}
-				});
-			});		
-
-		});
-
-
-		app.controller('userModal', function ($scope, socket) {
-
-			$scope.username = localStorage.getItem('username');
-
-			if($scope.username === null || $scope.username.length === 0) {
-				$('.overlay').show();
-				$('.modal-window').show();
-			}else{
-				socket.emit('set username', { name: $scope.username });
-			}
-
-			$scope.addName = function() {
-				$scope.username = $('#username').val();
-				socket.emit('set username', { name: $scope.username });
-				localStorage.setItem('username', $scope.username);
-
-				$('.modal-window').hide();
-				$('.overlay').animate({opacity: 0}, 500, function() {
-					$('.overlay').hide();
-				});
-			}
-		});
-
-
-		/** Блок с пользователями онлайн **/
-		app.controller('userBox', function ($scope, socket) {
-
-			$scope.online = function() {
-				return $scope.users.length;
-			}
-
-			$scope.users = [];
-
-			socket.on('list users', function(users){
-				$scope.users = users;
-			});	
-
-		});
-
-
-		/** ОБСЛУЖИВАЕМ ОПЕРАТОРСКИЙ ЧАТ **/
-
-		// Для отлавливания callback-a рендеринга окна чата,
-		// приходится использовать дополнительную директиву:
-		// Взято: http://www.nodewiz.biz/angular-js-final-callback-after-ng-repeat/
-		app.directive('onLastRepeat', function() {
-			return function(scope, element, attrs) {				
-				if (scope.$last) setTimeout(function(){
-					scope.$emit('onRepeatLast', element, attrs);
-				}, 1);
-			};
-		});
-
-		// Работаем с контроллером операторского чата
-		app.controller('chatBox', function ($scope, socket) {
-			
-			$scope.messages = []; // Здесь храним сообщения чата
-			$scope.writers = []; // А здесь тех, кто пишет сообщение прямо сейчас
-
-			// Событие вызывается директивой onLastRepeat для отлавливания callbacka рендера
-			var chatWindow = $('#chat-box')[0];
-			$scope.$on('onRepeatLast', function(scope, element, attrs){
-				chatWindow.scrollTop = chatWindow.scrollHeight; // скролим окно чата всегда вниз	
-			});
-
-			// Событие подгрузки истории чата
-			// (автоматически при установки связи в сокете)
-			socket.on('chat history', function(history){
-				$scope.messages = history.reverse();
-			});	
-
-			// Форма отправки нового сообщения
-			$scope.addMessage = function () {
-				socket.emit('chat message', { user: localStorage.getItem('username'), message: $('#message').val() });
-				$('#message').val('');
-				socket.emit('chat user stop writing', {});
-				return false;
-			}
-
-			// Добавляем новое сообщение в чат
-			socket.on('chat message', function(msg){
-				$scope.messages.push(msg);
-			});	  
-
-			// Следим и выводим, если кто-то пишет в чате
-			$scope.$watch('currentInput', function() {
-				if(typeof $scope.currentInput != "undefined") {
-					if($scope.currentInput.length > 0) {
-						socket.emit('chat user start writing', {});
-					}else{
-						socket.emit('chat user stop writing', {});
-					}
-				}
-			});
-
-			socket.on('chat user start writing', function(msg){
-				if($scope.writers.indexOf(msg.user) === -1) {
-					$scope.writers.push(msg.user);
-				}
-			});	  
-
-			socket.on('chat user stop writing', function(msg){
-				$scope.writers.splice($scope.writers.indexOf(msg.user), 1);
-			});	  
-
-		});
-
-
-
-
-
-
 		/** обработка верхней формы запроса обратного звонка **/
-
 		// Обработка запроса обратного звонка
 		$('#returncall').submit(function(){
-
 			// Отправка введенного телефона методом POST
 			$.post('/addReturnCall', { phone: $('#phone').val() }, function(res) {
 				console.log(res);
 				$('#returncall').html('<h4 style="color:white">Спасибо!<br/> Вам перезвонят в течении 10 минут.</h4>');
-			});
-			
+			});			
 			return false;
 		});	  
-
 	</script>
 
 	</body>

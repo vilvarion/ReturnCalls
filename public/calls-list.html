@@ -1,0 +1,14 @@
+<table class="table">
+	<thead>
+		<tr><td>Дата</td><td>Телефон</td><td>Комментарий</td><td>Выполнение</td></tr>
+	</thead>
+	<tbody>
+		<tr ng-repeat="item in list" class="call-done-{{item.done}}" ng-class="{ 'call-operator-taken': item.operator }">
+			<td>{{item.time | date : 'd MMM, H:mm'}}</td>
+			<td>{{item.phone}}</td>
+			<td>{{item.comment}} <a href="#" ng-click="addComment(item._id)" class="dotted">edit</a></td>
+			<td>{{item.operator}} <a href="#" ng-hide="item.done" ng-if="!item.operator" ng-click="takeOrder(item._id)" class="btn btn-info btn-xs">на обработку</a></td>
+			<td><a href="#" ng-hide="item.done || item.operator != username" ng-click="makeDone(item._id)" class="btn btn-primary btn-xs">выполнен</a></td>
+		</tr>
+	</tbody>
+</table>

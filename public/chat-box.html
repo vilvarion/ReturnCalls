@@ -1,0 +1,21 @@
+<div class="panel panel-primary">
+	<div class="panel-heading">Операторский чат</div>
+	<div class="panel-body">
+		<ul id="chat-box" class="stripped-ul">
+			<li ng-repeat="item in messages" on-last-repeat>{{item.time | date : 'd MMM, H:mm'}} <b>{{item.user}}</b> &nbsp; <i>{{item.message}}</i></li>
+			<li ng-repeat="writer in writers" class="chat-writer" on-last-repeat>{{writer}} печатает сообщение...</li>
+		</ul>
+	</div>
+	<div class="panel-footer">
+		<form novalidate id="chat" ng-submit="addMessage()" class="form-inline">
+
+			<div class="input-group">
+			<input id="message" autocomplete="off" ng-model="currentInput" type="text" class="form-control">
+			<span class="input-group-btn">
+				<input type="submit" class="btn btn-primary" ng-disabled="!(currentInput.length > 0)" type="button" value="отправить" />
+			</span>
+			</div>
+
+		</form> 			
+	</div>
+</div>

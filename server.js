@@ -10,14 +10,14 @@ app.use(require('connect').bodyParser());
 
 
 // DB
-var Chat = mongoose.model('chat', { user: String, message: String, time: String });
+var Chat = mongoose.model('chat', { user: String, message: String, time: Date });
 var ReturnCalls = mongoose.model('calls', { 
-		phone: String, name: String, time: String, comment: String, operator: String, done: Boolean 
+		phone: String, name: String, time: Date, comment: String, operator: String, done: Boolean 
 	});
 
 
 // Я не брал никакого стандартного модуля для работы пользователей.
-// Сделал сам простенький объект работы с ними.
+// Сделал сам простенький объект.
 var Users = {
 	// массив пользователей
 	list: [],
@@ -26,7 +26,7 @@ var Users = {
 	current: function (socket) {
 		var current;
 		Users.list.forEach(function (user) {
-			if(user._id == (socket.id).toString()) {
+			if(user._id === (socket.id).toString()) {
 				current = user;
 				return false;
 			}
@@ -36,7 +36,7 @@ var Users = {
 	// функция присвоения имени пользователя
 	setCurrentName:  function (socket, name) {
 		Users.list.forEach(function (user) {
-			if(user._id == (socket.id).toString()) {
+			if(user._id === (socket.id).toString()) {
 				user.name = name;
 			}
 		});
@@ -53,7 +53,7 @@ db.once('open', function callback () {
 
 
 function getTime () {
-	return (new Date).toLocaleTimeString();
+	return (new Date());
 }
 function fetchCalls (target) {
 	// Вытаскиваем историю заявок звонков
@@ -74,6 +74,12 @@ app.get('/', function(req, res){
 	res.sendfile('index.html');
 });
 
+
+// Папка для директив, css и js
+app.use("/public", express.static(__dirname + '/public'));
+
+
+// Роут принимающий новый запрос обратного звонка
 app.post('/addReturnCall', function(req, res){
 
 	var call = new ReturnCalls({ phone: req.body.phone, time: getTime(), done: false });
@@ -115,7 +121,7 @@ io.on('connection', function(socket){
 
 
 	socket.on('call is done', function(msg) {
-		ReturnCalls.findOneAndUpdate({ _id: msg }, { done: true }, function(result) {
+		ReturnCalls.findOneAndUpdate({ _id: msg }, { done: true }, function() {
 
 			io.sockets.emit('calls updates', { _id: msg, done: true });
 
@@ -123,7 +129,7 @@ io.on('connection', function(socket){
 	});
 
 	socket.on('call comment update', function(msg) {
-		ReturnCalls.findOneAndUpdate({ _id: msg._id }, { comment: msg.comment }, function(result) {
+		ReturnCalls.findOneAndUpdate({ _id: msg._id }, { comment: msg.comment }, function() {
 
 			io.sockets.emit('calls updates', { _id: msg._id, comment: msg.comment });
 
@@ -168,11 +174,11 @@ io.on('connection', function(socket){
 	
 	// Сообщения, что пользователь начал и закончил печатать
 	// Рассылаем всем кроме него самого
-	socket.on('chat user start writing', function(msg){
+	socket.on('chat user start writing', function(){
 		socket.broadcast.emit('chat user start writing', { user: Users.current(socket).name });
 	});
 
-	socket.on('chat user stop writing', function(msg){
+	socket.on('chat user stop writing', function(){
 		socket.broadcast.emit('chat user stop writing', { user: Users.current(socket).name });
 	});
 
@@ -183,7 +189,7 @@ io.on('connection', function(socket){
 		console.log('user disconnected: ' + Users.current(socket)._id);
 
 		Users.list.forEach(function (item, i) {
-			if(item._id == Users.current(socket)._id) {
+			if(item._id === Users.current(socket)._id) {
 				Users.list.splice(i, 1);
 				io.sockets.emit('list users', Users.list); 
 			}
