@@ -2,6 +2,9 @@
   "name": "ReturnCalls",
   "version": "0.1.2",
   "description": "my first socket.io app",
+  "engines": {
+    "node": "0.10.x"
+  },
   "dependencies": {
     "connect": "^2.19.6",
     "express": "^4.4.3",
