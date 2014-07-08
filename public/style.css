@@ -1,12 +1,39 @@
 body { 
-	padding-top: 0px; 
+	padding: 50px 0px; 
+	font-size: 14px !important;
+	color: #333 !important;
 }
-h4 { 
-	color: white; 
+h5 { 
+	color: #666;
+	font-weight: bold;
+	font-size: 16px;
+	margin-top: 20px;
 }
-thead { 
-	color: #999; 
+
+ol {
+	padding-left: 20px;
 }
+ol>li {
+	margin: 10px 0px;
+}
+
+.well {
+	position: relative;
+	opacity: .4;
+	-webkit-transition: all 0.2s ease;
+	transition: all 0.2s ease;	
+}
+.well:hover {
+	opacity: 1;
+}
+.close_div { 
+	position: absolute; 
+	top:10px; 
+	right:15px; 
+	font-size: 16px; 
+	cursor: pointer; 
+}
+
 .stripped-ul { 
 	list-style-type: none;
 	margin: 0;
@@ -33,29 +60,15 @@ thead {
 	background-color: white; 
 	font-style: italic; 
 }
-.frontend { 
-	height: 150px; 
-	background-color: #666; 
-	padding-top: 30px; 
-	padding-bottom: 40px; 
-	margin-bottom: 40px; 
-	border-bottom: 2px dashed #333; 
-}
-.close_div { 
-	position: absolute; 
-	top:10px; right:25px; 
-	font-size: 28px; 
-	color: #ccc; 
-	cursor: pointer; 
-}
-.operatior-interface { 
-	margin-top: 50px; 
-}
+
+
 .call-done-false { 
 	background-color: #fde1d8; 
+	color: #333;
 }
 .call-done-true { 
 	background-color: #ffffff; 
+	color: #333;
 }
 .call-done-false.call-operator-taken { 
 	background-color: #ffffcc; 
@@ -89,11 +102,32 @@ a.btn {
 
 .connection-lost-warning {
 	background-color: #ffffaa;
-	color: #ff6655;
+	color: #dd8877;
 	position: absolute;
 	padding: 5px 0px;
 	border-bottom: 1px solid #ccc;
 	top: 0px;
 	width: 100%;
 	text-align: center;
+}
+
+ul.no-style {
+	padding: 0px;
+	margin: 0px;
+}
+
+ul.no-style > li {
+	list-style-type: none;
+}
+
+ul.themes {
+	padding: 0px;
+	font-size: 12px;
+}
+ul.themes>li {
+	display: inline;
+	margin: 0px 5px;
+}
+ul.themes>li.active {
+	background-color: #ffffbb;
 }

@@ -36,11 +36,12 @@ app.factory('socket',function ($rootScope){
 /** Сообщение на случай дисконнекта сокета **/
 app.controller('onlineCheck', function ($scope, socket) {
 	
+	$scope.username = localStorage.getItem('username');
 	$scope.online = false;
 
 	socket.on('connect', function(){
     $scope.online = true;
-    socket.emit('set username', { name: localStorage.getItem('username') });
+    socket.emit('set username', { name: $scope.username });
 	});
 	socket.on('disconnect', function(){
     $scope.online = false;
@@ -192,7 +193,47 @@ app.directive('chatBox', function() {
 });
 
 
+/*
+* Апи предоставлен http://bootswatch.com
+* Создаем выборку оформления
+*/
+app.directive('themeSwatcher', function() {
+	return {
+		restrict: 'E',
+		templateUrl: 'public/theme-swatcher.html',
+		controller: function($scope, $http) {
 
+			$scope.currentTheme = localStorage.getItem('theme');
+
+			$http.get('http://api.bootswatch.com/3/')
+			.success(function(data){
+				$scope.themes = data.themes;
+			})
+			.error(function(){
+				alert('error!');
+			});
+
+			$scope.$watch('currentTheme', function() {
+				localStorage.setItem('theme', $scope.currentTheme);
+				$('#theme-loading').show(); // TODO: перенести на рендер angular-a
+
+				var themeFile = '//netdna.bootstrapcdn.com/bootswatch/latest/'+ $scope.currentTheme.toLowerCase() +'/bootstrap.min.css';
+
+				// Сначала загружаем css файл, а потом уже подменяем его.
+				// Иначе получаем unstyled flash в ff
+				$.get( themeFile, function() {
+					// $scope.loading = false;  - почему-то не срабатывает тут, не рендерит
+					$('#theme-loading').hide();
+					$('#bootswatch').attr('href', themeFile);
+				});				
+
+			});
+		}
+	}
+});
+
+
+// Модальное окно запроса имени оператора
 app.directive('loginModal', function() {
 	return {
 		restrict: 'E',
@@ -206,16 +247,19 @@ app.directive('loginModal', function() {
 			}
 
 			$scope.addName = function() {
-				$scope.username = $('#username').val();
-				socket.emit('set username', { name: $scope.username });
-				localStorage.setItem('username', $scope.username);
+				if($scope.username.length > 0) {
 
-				// TODO: перенести анимацию в логику шаблона??
-				$('.modal-window').hide();
-				$('.overlay').animate({opacity: 0}, 500, function() {
-					$('.overlay').hide();
-					$scope.showModal = false;
-				});
+					socket.emit('set username', { name: $scope.username });
+					localStorage.setItem('username', $scope.username);
+
+					// TODO: перенести анимацию в логику шаблона??
+					$('.modal-window').hide();
+					$('.overlay').animate({opacity: 0}, 500, function() {
+						$('.overlay').hide();
+						$scope.showModal = false;
+					});
+
+				}
 			}
 		}
 	}

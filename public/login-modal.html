@@ -7,14 +7,14 @@
 			<form novalidate ng-submit="addName()" class="form-inline">
 
 				<div class="input-group">
-				<input id="username" autocomplete="off" autofocus value="{{name}}" type="text" class="form-control">
+				<input autocomplete="off" autofocus value="{{username}}" ng-model="username" type="text" class="form-control">
 				<span class="input-group-btn">
-					<input type="submit" class="btn btn-primary" type="button" value="войти" />
+					<input type="submit" class="btn btn-primary" ng-disabled="!(username.length > 0)" type="button" value="войти" />
 				</span>
 				</div>
 
 			</form>
-			<small>Впишите любое имя или ник. Проверки никакой нет.</small>
+			<small>Впишите ваше имя или ник</small>
 
 		</div>
 	</div> 

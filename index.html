@@ -2,37 +2,16 @@
 <html lang="ru" ng-app="ReturnCalls">
 	<head>
 		<title>ReturnCalls</title>
-		<link rel="stylesheet" type="text/css" href="http://bootswatch.com/lumen/bootstrap.min.css">
+		<link rel="stylesheet" id="bootswatch" type="text/css" href="//netdna.bootstrapcdn.com/bootswatch/latest/lumen/bootstrap.min.css">
 		<link rel="stylesheet" href="/public/style.css">
 	</head>
 	<body>
 
 	<login-modal></login-modal>
 
-	<div class="frontend hide">
-		<div class="container">
-			<div class="row">
-				<div class="col-xs-4">
+	<div class="connection-lost-warning" ng-controller="onlineCheck" ng-hide="online">Мы в режиме оффлайн. Подключаемся . . .</div>
 
-					<form class="form-inline" id="returncall">
-						<h4>Заказ обратного звонка</h4>
-						<div class="input-group">
-						<input id="phone" name="phone" type="text" class="form-control">
-						<span class="input-group-btn">
-							<input type="submit" class="btn btn-warning" type="button" value="перезвоните мне" />
-						</span>
-						</div>
-					</form>
-
-				</div>
-			</div>
-			<div class="close_div" onclick="$('.frontend').hide()">x</div>
-		</div>
-	</div>
-
-	<div class="connection-lost-warning" ng-controller="onlineCheck" ng-hide="online">Ой! Связь с сервером потеряна! Пробуем переподключиться...</div>
-
-	<div class="container operatior-interface">
+	<div class="container">
 		<div class="row">
 			<div class="col-xs-8">
 
@@ -44,9 +23,28 @@
 
 						</div>
 						<div class="panel-footer">
-
+							<theme-swatcher style="font-size:12px;"></theme-swatcher>
 						</div>
 					</div>   
+
+					<div class="well">
+						<a class="close_div dotted" onclick="$('.well').hide();return false;">скрыть</a>
+						<p>Вы находитесь в инструменте для операторов колл-центра службы обратных звонков.</p>
+						<h5>Процесс работы с операторским инструментом:</h5>
+							<ol>
+								<li>Строки помеченные <span class="label call-done-false">красным</span> &mdash; новый заказ / заказом еще никто не занимался. Для того, чтобы взять заказ на выполнение, нажмите на кнопку <span class="label label-info">на выполнение</span></li>
+								<li>Строки помеченные <span class="label call-done-false call-operator-taken">желтым</span> &mdash; заказ взят в обработку / оператор звонит клиенту уже сейчас. В таких строках в колонке "оператор" появляется имя оператора. Если оператором этого заказа являетесь вы &mdash; у вас есть кнопка <span class="label label-primary">выполнен</span>, которую вы обязаны нажать после того, как совершите звонок.</li>
+								<li>Обязательно пишите комментарий к своим звонкам! Для этого есть специальная колонка и кнопка <span class="dotted">edit</span> в ней. В комментариях вы можете коротко указать, как прошел звонок ("клиент не согласен на условия", "направил к менеджерам"), временные записки ("перезвонить через 10 минут", "сбрасывает") или причину отказа ("хулиганы", "телефон отключен").</li>
+								<li>Для удобства работы у вас есть чат с операторами. </li>
+							</ol>
+						<h5>Откуда берутся запросы?</h5>
+						<p>Запросы обратных звонков приходят с главного сайта, из формы заказа. <br/> Ajax POST запрос с полем phone на определенный адрес. Например:
+							<form id="returncall">
+								<input id="phone" name="phone" type="text">
+								<input type="submit" type="button" value="перезвоните мне" />
+							</form>
+						</p>
+					</div>
 
 			</div>
 			<div class="col-xs-4">
@@ -71,7 +69,7 @@
 			// Отправка введенного телефона методом POST
 			$.post('/addReturnCall', { phone: $('#phone').val() }, function(res) {
 				console.log(res);
-				$('#returncall').html('<h4 style="color:white">Спасибо!<br/> Вам перезвонят в течении 10 минут.</h4>');
+				$('#returncall').html('<div class="label label-success">запрос отправлен!</div>');
 			});			
 			return false;
 		});	  

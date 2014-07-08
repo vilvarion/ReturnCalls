@@ -1,0 +1,6 @@
+Выберите оформление: 
+<select class="themes" ng-model="currentTheme">
+	<option ng-repeat="theme in themes" ng-selected="(currentTheme === theme.name)">{{theme.name}}</option>
+</select>
+
+<span class="label label-warning" id="theme-loading" style="display:none">загружаем</span>
