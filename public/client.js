@@ -40,11 +40,11 @@ app.controller('onlineCheck', function ($scope, socket) {
 	$scope.online = false;
 
 	socket.on('connect', function(){
-    $scope.online = true;
-    socket.emit('set username', { name: $scope.username });
+		$scope.online = true;
+		socket.emit('set username', { name: $scope.username });
 	});
 	socket.on('disconnect', function(){
-    $scope.online = false;
+		$scope.online = false;
 	});
 
 });
@@ -165,6 +165,7 @@ app.directive('chatBox', function() {
 
 			// Добавляем новое сообщение в чат
 			socket.on('chat message', function(msg){
+				msg.new = true;
 				$scope.messages.push(msg);
 			});	  
 
