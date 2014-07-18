@@ -180,6 +180,19 @@ app.directive('chatBox', function() {
 				}
 			});
 
+			$scope.ctrlEnter = function (event) {
+
+				var keyCode = (event.which ? event.which : event.keyCode);          
+
+				// todo: разобраться, почему метакей не работает (на маке cmd+enter не отправляет)
+				if ((keyCode === 10 || keyCode == 13) && (event.metaKey || event.ctrlKey)) {
+					$scope.addMessage();
+					event.preventDefault();
+					return false;
+				}
+
+			}
+
 			socket.on('chat user start writing', function(msg){
 				if($scope.writers.indexOf(msg.user) === -1) {
 					$scope.writers.push(msg.user);

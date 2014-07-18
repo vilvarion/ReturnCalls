@@ -9,7 +9,7 @@
 	<div class="panel-footer">
 		<form novalidate id="chat" ng-submit="addMessage()" class="form-inline">
 
-			<textarea id="message" autocomplete="off" ng-model="currentInput" type="text" class="form-control" style="width:100%"></textarea>
+			<textarea id="message" autocomplete="off" ng-keypress="ctrlEnter($event)" ng-model="currentInput" type="text" class="form-control" style="width:100%"></textarea>
 			<input type="submit" class="btn btn-primary btn-sm" ng-disabled="!(currentInput.length > 0)" type="button" value="отправить" style="margin-top:10px;" />
 
 		</form> 			
